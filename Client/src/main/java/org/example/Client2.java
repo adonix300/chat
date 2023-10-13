@@ -2,6 +2,8 @@ package org.example;
 
 import java.io.*;
 import java.net.Socket;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Scanner;
 
 public class Client2 {
@@ -19,12 +21,6 @@ public class Client2 {
              Scanner scanner = new Scanner(System.in)) {
 
             System.out.println("Connected");
-//            System.out.print("Put your nickname: ");
-//            nickName = scanner.nextLine();
-//            writer.write(nickName);
-//            writer.newLine();
-//            writer.flush();
-
 
             nickName = enterNickname(scanner);
             sendMessage(writer, nickName);
@@ -33,7 +29,14 @@ public class Client2 {
                 String response;
                 try {
                     while ((response = reader.readLine()) != null) {
-                        System.out.println(response);
+                        if (response.startsWith("Server: ") && response.contains(nickName + " has been kicked from the chat.")) {
+                            System.out.println("You have been kicked from the chat.");
+                            socket.close();
+                            break;
+                        } else {
+                            String formattedMessage = "[" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "] " + response;
+                            System.out.println(formattedMessage);
+                        }
                     }
                 } catch (IOException e) {
                     throw new RuntimeException(e);
@@ -42,13 +45,10 @@ public class Client2 {
 
             while (true) {
                 String request = scanner.nextLine();
-//                writer.write(request);
-//                writer.newLine();
-//                writer.flush();
-
                 sendMessage(writer, request);
 
                 if (request.equals("/exit")) {
+                    socket.close();
                     break;
                 }
             }

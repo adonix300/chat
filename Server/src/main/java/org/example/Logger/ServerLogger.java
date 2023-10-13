@@ -22,7 +22,7 @@ public class ServerLogger {
 
     public static String formatLogMessage(String level, String message) {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        return String.format("[%s] %s: %s", timestamp, level, message);
+        return String.format("[%s] [%s] %s", timestamp, level, message);
     }
 
     public static void logInfo(String message) {

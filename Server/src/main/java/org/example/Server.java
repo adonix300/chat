@@ -11,8 +11,7 @@ import java.util.*;
 
 public class Server {
     private static int port;
-    private static Map<String, Socket> nicknameAndSocketMap = new HashMap<>();
-    private static List<Socket> clientSockets = new ArrayList<>();
+    private static Map<String, Socket> clientSockets = new HashMap<>();
 
     public static void main(String[] args) {
         setting("Server\\config\\settings.txt");
@@ -38,30 +37,11 @@ public class Server {
         }
     }
 
-    private static void serverCommands(Scanner scanner) {
-        while (true) {
-            String serverCommand = scanner.nextLine();
-            if (serverCommand.startsWith("/broadcast")) {
-                String message = serverCommand.substring("/broadcast".length()).trim();
-                printWriteAndLogInfo("Server: " + message);
-            } else if (serverCommand.startsWith("/kick")) {
-//                String nameToKick = serverCommand.substring("/kick".length()).trim();
-//                try {
-//                    nicknameAndSocketMap.get(nameToKick).close();
-//                } catch (IOException e) {
-//                    throw new RuntimeException(e);
-//                }
-//                nicknameAndSocketMap.remove(nameToKick);
-
-            }
-        }
-    }
-
     private static void handleClient(Socket socket) {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
 
             String nickname = reader.readLine();
-            nicknameAndSocketMap.put(nickname, socket);
+            clientSockets.put(nickname, socket);
             printWriteAndLogInfo(nickname + " has joined the chat.");
 
             while (true) {
@@ -72,10 +52,9 @@ public class Server {
                 }
             }
 
-            nicknameAndSocketMap.remove(nickname);
+            clientSockets.remove(nickname);
             printWriteAndLogInfo(nickname + " has left the chat.");
         } catch (IOException e) {
-            throw new RuntimeException(e);
         } finally {
             try {
                 socket.close();
@@ -85,12 +64,64 @@ public class Server {
         }
     }
 
+    private static void serverCommands(Scanner scanner) {
+        while (true) {
+            String serverCommand = scanner.nextLine();
+            if (serverCommand.startsWith("/broadcast")) {
+                String message = serverCommand.substring("/broadcast".length()).trim();
+                printWriteAndLogInfo("Server: " + message);
+
+            } else if (serverCommand.startsWith("/kick")) {
+                String nameToKick = serverCommand.substring("/kick".length()).trim();
+                kickClient(nameToKick);
+            } else if (serverCommand.startsWith("/pm")) {
+                String message = serverCommand.substring("/pm".length()).trim();
+                String[] nicknameFinder = message.split(" ");
+                String nickname = nicknameFinder[0];
+                String normalMessage = message.substring(nickname.length()).trim();
+                privateMessage(nickname, normalMessage);
+            }
+        }
+    }
+
+    private static void kickClient(String nameToKick) {
+        Socket socketToKick = clientSockets.get(nameToKick);
+        if (clientSockets.get(nameToKick) != null) {
+            try {
+                printWriteAndLogInfo(nameToKick + " has been kicked from the chat.");
+                socketToKick.close();
+                clientSockets.remove(nameToKick);
+            } catch (IOException e) {
+            }
+        } else {
+            printWriteAndLogInfo("No user with the name " + nameToKick + " is currently connected.");
+        }
+    }
+
+    private static void privateMessage(String nickname, String message) {
+        try {
+            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(clientSockets.get(nickname).getOutputStream()));
+
+            String formattedMessage = "[" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "] " + "Server PM to " + nickname + ": " + message;
+
+            System.out.println(formattedMessage);
+
+            writer.write("Server PM: " + message);
+            writer.newLine();
+            writer.flush();
+
+            ServerLogger.logInfo("Server PM to " + nickname + ": " + message);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private static void broadcastMessage(String message) {
-        synchronized (nicknameAndSocketMap) {
-            for (Map.Entry<String, Socket> entry : nicknameAndSocketMap.entrySet()) {
+        synchronized (clientSockets) {
+            for (Map.Entry<String, Socket> entry : clientSockets.entrySet()) {
                 try {
                     BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(entry.getValue().getOutputStream()));
-                    writer.write("[" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "] " + message);
+                    writer.write(message);
                     writer.newLine();
                     writer.flush();
                 } catch (IOException e) {
@@ -110,9 +141,10 @@ public class Server {
         }
     }
 
-    private static void printWriteAndLogInfo(String line) {
-        System.out.println(line);
-        broadcastMessage(line);
-        ServerLogger.logInfo(line);
+    private static void printWriteAndLogInfo(String message) {
+        String formattedMessage = "[" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "] " + message;
+        System.out.println(formattedMessage);
+        broadcastMessage(message);
+        ServerLogger.logInfo(message);
     }
 }
