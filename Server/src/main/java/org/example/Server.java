@@ -5,6 +5,7 @@ import org.example.Logger.ServerLogger;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -12,17 +13,21 @@ import java.util.*;
 public class Server {
     private static int port;
     private static Map<String, Socket> clientSockets = new HashMap<>();
+    private static final String COMMAND_TEXT_BROADCAST = "/broadcast";
+    private static final String COMMAND_TEXT_KICK = "/kick";
+    private static final String COMMAND_TEXT_PM = "/pm";
+    private static String localDateTime = "[" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "] ";
+    private static volatile boolean isRunning = true;
 
     public static void main(String[] args) {
         setting("Server\\config\\settings.txt");
 
-        try (ServerSocket serverSocket = new ServerSocket(port);
-             Scanner scanner = new Scanner(System.in)) {
+        try (ServerSocket serverSocket = new ServerSocket(port); Scanner scanner = new Scanner(System.in)) {
 
             System.out.println("Server started");
 
             new Thread(() -> {
-                serverCommands(scanner);
+                serverCommands(scanner, serverSocket);
             }).start();
 
             while (true) {
@@ -35,6 +40,7 @@ public class Server {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+
     }
 
     private static void handleClient(Socket socket) {
@@ -42,19 +48,25 @@ public class Server {
 
             String nickname = reader.readLine();
             clientSockets.put(nickname, socket);
-            printWriteAndLogInfo(nickname + " has joined the chat.");
+            printWriteLogInfo(nickname + " has joined the chat.");
 
             while (true) {
                 String response = reader.readLine();
-                printWriteAndLogInfo(nickname + ": " + response);
+                printWriteLogInfo(nickname + ": " + response);
                 if (response.equals("/exit")) {
                     break;
                 }
             }
 
             clientSockets.remove(nickname);
-            printWriteAndLogInfo(nickname + " has left the chat.");
+            printWriteLogInfo(nickname + " has left the chat.");
+        } catch (SocketException e) {
+            ServerLogger.logWarning("void handleClient - SocketException - socket closed");
+            System.out.println("void handleClient - SocketException - socket closed");
         } catch (IOException e) {
+            ServerLogger.logError("void handleClient - IOException");
+            System.out.println("void handleClient - IOException");
+            e.printStackTrace();
         } finally {
             try {
                 socket.close();
@@ -64,22 +76,24 @@ public class Server {
         }
     }
 
-    private static void serverCommands(Scanner scanner) {
+    private static void serverCommands(Scanner scanner, ServerSocket serverSocket) {
         while (true) {
             String serverCommand = scanner.nextLine();
-            if (serverCommand.startsWith("/broadcast")) {
-                String message = serverCommand.substring("/broadcast".length()).trim();
-                printWriteAndLogInfo("Server: " + message);
-
-            } else if (serverCommand.startsWith("/kick")) {
-                String nameToKick = serverCommand.substring("/kick".length()).trim();
+            if (serverCommand.startsWith(COMMAND_TEXT_BROADCAST)) {
+                String message = serverCommand.substring(COMMAND_TEXT_BROADCAST.length()).trim();
+                printWriteLogInfo("Server: " + message);
+            } else if (serverCommand.startsWith(COMMAND_TEXT_KICK)) {
+                String nameToKick = serverCommand.substring(COMMAND_TEXT_KICK.length()).trim();
                 kickClient(nameToKick);
-            } else if (serverCommand.startsWith("/pm")) {
-                String message = serverCommand.substring("/pm".length()).trim();
+            } else if (serverCommand.startsWith(COMMAND_TEXT_PM)) {
+                String message = serverCommand.substring(COMMAND_TEXT_PM.length()).trim();
                 String[] nicknameFinder = message.split(" ");
-                String nickname = nicknameFinder[0];
-                String normalMessage = message.substring(nickname.length()).trim();
-                privateMessage(nickname, normalMessage);
+                String recipient = nicknameFinder[0];
+                String privateMessage = message.substring(recipient.length()).trim();
+                privateMessage(recipient, privateMessage);
+            } else if (serverCommand.startsWith("/stop")) {
+                stopServer(serverSocket);
+                break;
             }
         }
     }
@@ -88,13 +102,15 @@ public class Server {
         Socket socketToKick = clientSockets.get(nameToKick);
         if (clientSockets.get(nameToKick) != null) {
             try {
-                printWriteAndLogInfo(nameToKick + " has been kicked from the chat.");
+                printWriteLogInfo("Server: " + nameToKick + " has been kicked from the chat.");
                 socketToKick.close();
                 clientSockets.remove(nameToKick);
             } catch (IOException e) {
+                ServerLogger.logError("void kickClient - IOException");
             }
         } else {
-            printWriteAndLogInfo("No user with the name " + nameToKick + " is currently connected.");
+            printWriteLogInfo("No user with the name " + nameToKick + " is currently connected.");
+            ServerLogger.logWarning("No user with the name " + nameToKick + " is currently connected.");
         }
     }
 
@@ -102,16 +118,12 @@ public class Server {
         try {
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(clientSockets.get(nickname).getOutputStream()));
 
-            String formattedMessage = "[" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "] " + "Server PM to " + nickname + ": " + message;
-
+            String formattedMessage = localDateTime + nickname + ": " + message;
             System.out.println(formattedMessage);
-
-            writer.write("Server PM: " + message);
-            writer.newLine();
-            writer.flush();
-
+            writeAndFlush(writer, "Server PM: " + message);
             ServerLogger.logInfo("Server PM to " + nickname + ": " + message);
         } catch (IOException e) {
+            ServerLogger.logError("void privateMessage - IOException");
             throw new RuntimeException(e);
         }
     }
@@ -121,14 +133,26 @@ public class Server {
             for (Map.Entry<String, Socket> entry : clientSockets.entrySet()) {
                 try {
                     BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(entry.getValue().getOutputStream()));
-                    writer.write(message);
-                    writer.newLine();
-                    writer.flush();
+                    writeAndFlush(writer, message);
                 } catch (IOException e) {
+                    ServerLogger.logError("void broadcastMessage - IOException");
                     e.printStackTrace();
                 }
             }
         }
+    }
+
+    private static void writeAndFlush(BufferedWriter writer, String message) throws IOException {
+        writer.write(message);
+        writer.newLine();
+        writer.flush();
+    }
+
+    private static void printWriteLogInfo(String message) {
+        String formattedMessage = localDateTime + message;
+        System.out.println(formattedMessage);
+        broadcastMessage(message);
+        ServerLogger.logInfo(message);
     }
 
     private static void setting(String filename) {
@@ -137,14 +161,23 @@ public class Server {
             String[] settings = line.split(":");
             port = Integer.parseInt(settings[1].trim());
         } catch (IOException e) {
+            ServerLogger.logError("settings.txt not founded");
             throw new RuntimeException(e);
         }
     }
 
-    private static void printWriteAndLogInfo(String message) {
-        String formattedMessage = "[" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "] " + message;
-        System.out.println(formattedMessage);
-        broadcastMessage(message);
-        ServerLogger.logInfo(message);
+    private static void stopServer(ServerSocket serverSocket) {
+        try {
+            printWriteLogInfo("Server has been stopped.");
+            for (Socket socket : clientSockets.values()) {
+                socket.close();
+            }
+            clientSockets.clear();
+            serverSocket.close();
+        } catch (IOException e) {
+            System.out.println("Error occurred while stopping the server.");
+            ServerLogger.logError("Error occurred while stopping the server.");
+            e.printStackTrace();
+        }
     }
 }

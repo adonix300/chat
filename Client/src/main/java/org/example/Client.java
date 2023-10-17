@@ -2,6 +2,7 @@ package org.example;
 
 import java.io.*;
 import java.net.Socket;
+import java.net.SocketException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Scanner;
@@ -10,6 +11,7 @@ public class Client {
     private static int port;
     private static String ip;
     private static String nickName;
+    private static String localDateTime = "[" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "] ";
 
 
     public static void main(String[] args) {
@@ -34,18 +36,26 @@ public class Client {
                             socket.close();
                             break;
                         } else {
-                            String formattedMessage = "[" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "] " + response;
+                            String formattedMessage = localDateTime + response;
                             System.out.println(formattedMessage);
                         }
                     }
+                } catch (SocketException e) {
+                    System.out.println("Connection to the server was lost.");
                 } catch (IOException e) {
-                    throw new RuntimeException(e);
+                    System.out.println("An error occurred while reading from the server.");
+                    e.printStackTrace();
                 }
             }).start();
 
             while (true) {
                 String request = scanner.nextLine();
-                sendMessage(writer, request);
+                try {
+                    sendMessage(writer, request);
+                } catch (IOException e) {
+                    System.out.println("An error occurred while sending a message to the server.");
+                    e.printStackTrace();
+                }
 
                 if (request.equals("/exit")) {
                     socket.close();
@@ -54,14 +64,19 @@ public class Client {
             }
 
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            System.out.println("An error occurred while connecting to the server.");
+            e.printStackTrace();
         }
     }
 
     private static void sendMessage(BufferedWriter writer, String text) throws IOException {
-        writer.write(text);
-        writer.newLine();
-        writer.flush();
+        try {
+            writer.write(text);
+            writer.newLine();
+            writer.flush();
+        } catch (IOException e) {
+            throw new IOException("An error occurred while sending a message.", e);
+        }
     }
 
     private static String enterNickname(Scanner scanner) {
@@ -81,7 +96,7 @@ public class Client {
                 }
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("An error occurred while reading the settings file.", e);
         }
     }
 }
