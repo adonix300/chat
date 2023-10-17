@@ -16,8 +16,6 @@ public class Server {
     private static final String COMMAND_TEXT_BROADCAST = "/broadcast";
     private static final String COMMAND_TEXT_KICK = "/kick";
     private static final String COMMAND_TEXT_PM = "/pm";
-    private static String localDateTime = "[" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "] ";
-    private static volatile boolean isRunning = true;
 
     public static void main(String[] args) {
         setting("Server\\config\\settings.txt");
@@ -118,7 +116,7 @@ public class Server {
         try {
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(clientSockets.get(nickname).getOutputStream()));
 
-            String formattedMessage = localDateTime + nickname + ": " + message;
+            String formattedMessage = formatString("Server PM to " + nickname + ": " + message);
             System.out.println(formattedMessage);
             writeAndFlush(writer, "Server PM: " + message);
             ServerLogger.logInfo("Server PM to " + nickname + ": " + message);
@@ -149,7 +147,7 @@ public class Server {
     }
 
     private static void printWriteLogInfo(String message) {
-        String formattedMessage = localDateTime + message;
+        String formattedMessage = formatString(message);
         System.out.println(formattedMessage);
         broadcastMessage(message);
         ServerLogger.logInfo(message);
@@ -179,5 +177,9 @@ public class Server {
             ServerLogger.logError("Error occurred while stopping the server.");
             e.printStackTrace();
         }
+    }
+
+    private static String formatString(String message) {
+        return "[" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "] " + message;
     }
 }

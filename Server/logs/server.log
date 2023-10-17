@@ -146,3 +146,28 @@ baby has joined the chat.
 [2023-10-15 17:18:10] [WARNING] void handleClient - SocketException - socket closed
 [2023-10-15 17:18:34] [INFO] Server has been stopped.
 [2023-10-15 17:18:34] [WARNING] void handleClient - SocketException - socket closed
+[2023-10-17 14:52:56] [INFO] client1 has joined the chat.
+[2023-10-17 14:52:59] [WARNING] void handleClient - SocketException - socket closed
+[2023-10-17 14:53:04] [INFO] client1 has joined the chat.
+[2023-10-17 14:53:28] [INFO] client has joined the chat.
+[2023-10-17 14:53:31] [INFO] client1: asdas
+[2023-10-17 14:53:33] [INFO] client: asdas
+[2023-10-17 14:53:38] [INFO] client: sssss
+[2023-10-17 14:54:05] [INFO] client has joined the chat.
+[2023-10-17 14:54:12] [INFO] client2 has joined the chat.
+[2023-10-17 14:54:18] [INFO] client: asd
+[2023-10-17 15:04:42] [INFO] client1 has joined the chat.
+[2023-10-17 15:04:44] [INFO] client1: asda
+[2023-10-17 15:04:50] [INFO] client2 has joined the chat.
+[2023-10-17 15:04:53] [INFO] client2: hheyhet
+[2023-10-17 15:05:00] [INFO] Server: hey all
+[2023-10-17 15:05:16] [INFO] Server PM to client1: hey
+[2023-10-17 15:06:59] [INFO] client1 has joined the chat.
+[2023-10-17 15:07:03] [INFO] client2 has joined the chat.
+[2023-10-17 15:07:10] [INFO] Server PM to client1: hey
+[2023-10-17 15:07:29] [INFO] Server: client1 has been kicked from the chat.
+[2023-10-17 15:07:29] [WARNING] void handleClient - SocketException - socket closed
+[2023-10-17 15:07:41] [INFO] client1 has joined the chat.
+[2023-10-17 15:07:45] [INFO] Server has been stopped.
+[2023-10-17 15:07:45] [WARNING] void handleClient - SocketException - socket closed
+[2023-10-17 15:07:45] [WARNING] void handleClient - SocketException - socket closed

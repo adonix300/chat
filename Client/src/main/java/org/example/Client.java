@@ -11,8 +11,6 @@ public class Client {
     private static int port;
     private static String ip;
     private static String nickName;
-    private static String localDateTime = "[" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "] ";
-
 
     public static void main(String[] args) {
         setting("Client\\config\\settings.txt");
@@ -36,7 +34,7 @@ public class Client {
                             socket.close();
                             break;
                         } else {
-                            String formattedMessage = localDateTime + response;
+                            String formattedMessage = formatString(response);
                             System.out.println(formattedMessage);
                         }
                     }
@@ -98,5 +96,9 @@ public class Client {
         } catch (IOException e) {
             throw new RuntimeException("An error occurred while reading the settings file.", e);
         }
+    }
+
+    private static String formatString(String message) {
+        return "[" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "] " + message;
     }
 }
