@@ -16,6 +16,7 @@ public class Server {
     private static final String COMMAND_TEXT_BROADCAST = "/broadcast";
     private static final String COMMAND_TEXT_KICK = "/kick";
     private static final String COMMAND_TEXT_PM = "/pm";
+    private static final String COMMANT_TEXT_STOP = "/stop";
 
     public static void main(String[] args) {
         setting("Server\\config\\settings.txt");
@@ -89,7 +90,7 @@ public class Server {
                 String recipient = nicknameFinder[0];
                 String privateMessage = message.substring(recipient.length()).trim();
                 privateMessage(recipient, privateMessage);
-            } else if (serverCommand.startsWith("/stop")) {
+            } else if (serverCommand.startsWith(COMMANT_TEXT_STOP)) {
                 stopServer(serverSocket);
                 break;
             }
@@ -166,7 +167,7 @@ public class Server {
 
     private static void stopServer(ServerSocket serverSocket) {
         try {
-            printWriteLogInfo("Server has been stopped.");
+            printWriteLogInfo("Server: Server has been stopped.");
             for (Socket socket : clientSockets.values()) {
                 socket.close();
             }

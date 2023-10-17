@@ -171,3 +171,9 @@ baby has joined the chat.
 [2023-10-17 15:07:45] [INFO] Server has been stopped.
 [2023-10-17 15:07:45] [WARNING] void handleClient - SocketException - socket closed
 [2023-10-17 15:07:45] [WARNING] void handleClient - SocketException - socket closed
+[2023-10-17 15:12:01] [INFO] client1 has joined the chat.
+[2023-10-17 15:12:05] [INFO] Server: Server has been stopped.
+[2023-10-17 15:12:05] [WARNING] void handleClient - SocketException - socket closed
+[2023-10-17 15:12:47] [INFO] client1 has joined the chat.
+[2023-10-17 15:12:51] [INFO] Server: Server has been stopped.
+[2023-10-17 15:12:51] [WARNING] void handleClient - SocketException - socket closed

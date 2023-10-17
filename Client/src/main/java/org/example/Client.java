@@ -33,6 +33,9 @@ public class Client {
                             System.out.println("You have been kicked from the chat.");
                             socket.close();
                             break;
+                        } else if (response.startsWith("Server: ") && response.contains("Server has been stopped.")) {
+                            socket.close();
+                            break;
                         } else {
                             String formattedMessage = formatString(response);
                             System.out.println(formattedMessage);
